@@ -10,19 +10,59 @@ import shutil
 import tempfile
 import time
 
-def getVersions():
-	def sort_key(version):
-		version = version.split('.')
-		version = map(int, version)
-		return tuple(version)
+def toTuple(version):
+	version = version.split('.')
+	version = map(int, version)
+	return tuple(version)
 
+def versionRange(v1, v2):
+	major1, minor1, patch1 = toTuple(v1)
+	major2, minor2, patch2 = toTuple(v2)
+
+	for major in range(major1, major2 + 1):
+		for minor in range(minor1, minor2 + 1):
+			for patch in range(patch1 + 1, patch2 + 1):
+				yield '{0}.{1}.{2}'.format(major, minor, patch)
+
+class Application(object):
+
+	def __init__(self, __file):
+		self.__file = __file
+
+	def update(self):
+		data = json.load(self.__file)
+
+		current_release = data[0]['Version']
+		latest_release = getVersions()[0]
+
+		print('Current release: {0}'.format(current_release))
+		print('Latest release: {0}'.format(latest_release))
+
+		if latest_release == current_release:
+			print('Respositry is already upto date')
+			return
+
+		for version in versionRange(current_release, latest_release):
+			if isValid(version):
+				print('Adding release: {0}'.format(version))
+				amd64 = packageInfo(version, True)
+				i386 = packageInfo(version)
+				data.insert(0, amd64)
+				data.insert(0, i386)
+
+		self.__file.seek(0)
+		json.dump(data, f, indent = 4, sort_keys = True)
+		self.__file.truncate()
+		print('Respositry updated')
+
+def getVersions():
 	pattern = re.compile('\((\d+\.\d+\.\d+)\)')
 	url = 'https://support.rstudio.com/hc/en-us/articles/200716783-RStudio-Release-History'
 	doc = requests.get('https://support.rstudio.com/hc/en-us/articles/200716783-RStudio-Release-History')
 	versions = pattern.finditer(doc.text)
 	versions = map(lambda v: v.groups()[0], versions)
 	versions = set(versions)
-	return sorted(versions, reverse = True, key = sort_key)
+	return sorted(versions, reverse = True, key = toTuple)
 
 def isValid(version):
 	url = 'https://download1.rstudio.org/rstudio-{0}-i386.deb'.format(version)
@@ -144,3 +184,9 @@ if __name__ == '__main__':
 	update_parser = action_subparser.add_parser('update', help='updates the repository with the latest versions of rstudio', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	check_parser = action_subparser.add_parser('check', help='checks for new versions of rstudio', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	args = parser.parse_args()
+
+	with open('data.json', 'r+') as f:
+		app = Application(f)
+
+		if 'update' == args.action:
+			app.update()
