@@ -26,8 +26,40 @@ def versionRange(v1, v2):
 
 class Application(object):
 
-	def __init__(self, __file):
-		self.__file = __file
+	def __init__(self, fh):
+		self.__file = fh
+
+	def export(self, arch = None):
+		data = json.load(self.__file)
+
+		if arch:
+			data = [d for d in data if d['Architecture'] in arch]
+
+		sort_order = {
+			'Package': 0,
+			'Version': 1,
+			'Architecture': 2,
+			'Maintainer': 3,
+			'Installed-Size': 4,
+			'Depends': 5,
+			'Recommends': 6,
+			'Filename': 7,
+			'Size': 8,
+			'MD5sum': 9,
+			'SHA1': 10,
+			'SHA256': 11,
+			'Section': 12,
+			'Priority': 13,
+			'Description': 15
+		}
+		sort_key = lambda f: sort_order[f] if f in sort_order else 14
+
+		with gzip.open('Packages.gz', 'wt') as f:
+			for entry in data:
+				entry['Filename'] = 'pool/main/r/rstudio/{0}'.format(entry['Filename'])
+				for field in sorted(entry.keys(), key = sort_key):
+					f.write('{0}: {1}\n'.format(field, entry[field]))
+				f.write('\n')
 
 	def update(self):
 		data = json.load(self.__file)
@@ -181,8 +213,10 @@ if __name__ == '__main__':
 	import argparse
 	parser = argparse.ArgumentParser()
 	action_subparser = parser.add_subparsers(dest='action')
+	export_parser = action_subparser.add_parser('export', help='exports the repository as Packages.gz', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+	export_parser.add_argument('--architecture', type=str, choices=['i386', 'amd64'], nargs='+', default=['i386', 'amd64'])
+	export_parser.add_argument('--debroot', type=str, default='pool/main/r/rstudio/', help='')
 	update_parser = action_subparser.add_parser('update', help='updates the repository with the latest versions of rstudio', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-	check_parser = action_subparser.add_parser('check', help='checks for new versions of rstudio', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	args = parser.parse_args()
 
 	with open('data.json', 'r+') as f:
@@ -190,3 +224,6 @@ if __name__ == '__main__':
 
 		if 'update' == args.action:
 			app.update()
+
+		if 'export' == args.action:
+			app.export(arch = args.architecture)
