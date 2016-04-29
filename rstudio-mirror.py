@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 from deb_pkg_tools import control
 from deb_pkg_tools import repo
 import gzip
@@ -19,9 +19,9 @@ def versionRange(v1, v2):
 	major1, minor1, patch1 = toTuple(v1)
 	major2, minor2, patch2 = toTuple(v2)
 
-	for major in range(major1, major2 + 1):
-		for minor in range(minor1, minor2 + 1):
-			for patch in range(patch1 + 1, patch2 + 1):
+	for major in xrange(major1, major2 + 1):
+		for minor in xrange(minor1, minor2 + 1):
+			for patch in xrange(patch1 + 1, patch2 + 1):
 				yield '{0}.{1}.{2}'.format(major, minor, patch)
 
 class Application(object):
@@ -67,16 +67,16 @@ class Application(object):
 		current_release = data[0]['Version']
 		latest_release = getVersions()[0]
 
-		print('Current release: {0}'.format(current_release))
-		print('Latest release: {0}'.format(latest_release))
+		print 'Current release: {0}'.format(current_release)
+		print 'Latest release: {0}'.format(latest_release)
 
 		if latest_release == current_release:
-			print('Respositry is already upto date')
+			print 'Respositry is already upto date'
 			return
 
 		for version in versionRange(current_release, latest_release):
 			if isValid(version):
-				print('Adding release: {0}'.format(version))
+				print 'Adding release: {0}'.format(version)
 				amd64 = packageInfo(version, True)
 				i386 = packageInfo(version)
 				data.insert(0, amd64)
@@ -85,7 +85,7 @@ class Application(object):
 		self.__file.seek(0)
 		json.dump(data, f, indent = 4, sort_keys = True)
 		self.__file.truncate()
-		print('Respositry updated')
+		print 'Respositry updated'
 
 def getVersions():
 	pattern = re.compile('\((\d+\.\d+\.\d+)\)')
@@ -136,14 +136,14 @@ def updateData():
 		data = json.load(file)
 
 		if len(data) < 1:
-			print('Problem with data')
+			print 'Problem with data'
 			exit(1)
 
 		latest = data[0]['Version']
 		newest = getVersions()[0]
 
 		if latest == newest:
-			print('Respositry is upto date')
+			print 'Respositry is upto date'
 			exit()
 
 		latest = latest.split('.')
@@ -158,19 +158,19 @@ def updateData():
 			for minor in range(latest[1], newest[1] + 1):
 				for patch in range(latest[2] + 1, newest[2] + 1):
 					version = '{0}.{1}.{2}'.format(major, minor, patch)
-					print('Checking for version: {0}'.format(version))
+					print 'Checking for version: {0}'.format(version)
 					if isValid(version):
-						print('Found version: {0}'.format(version))
+						print 'Found version: {0}'.format(version)
 						newVersions.append(version)
 
 		for version in newVersions:
-			print('Working on version: {0}'.format(version))
+			print 'Working on version: {0}'.format(version)
 			amd64 = packageInfo(version, True)
 			i386 = packageInfo(version)
 			data.insert(0, amd64)
 			data.insert(0, i386)
 
-		print('Updating data.json')
+		print 'Updating data.json'
 		file.seek(0)
 		json.dump(data, file, indent = 4, sort_keys = True)
 		file.truncate()	
