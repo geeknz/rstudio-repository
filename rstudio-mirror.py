@@ -211,7 +211,8 @@ def writePackageFile(architecture):
 
 if __name__ == '__main__':
 	import argparse
-	parser = argparse.ArgumentParser()
+	parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+	parser.add_argument('-d', '--data', type=str, default='data.json', help='repository data file')
 	action_subparser = parser.add_subparsers(dest='action')
 	export_parser = action_subparser.add_parser('export', help='exports the repository as Packages.gz', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	export_parser.add_argument('--architecture', type=str, choices=['i386', 'amd64'], nargs='+', default=['i386', 'amd64'])
@@ -219,7 +220,7 @@ if __name__ == '__main__':
 	update_parser = action_subparser.add_parser('update', help='updates the repository with the latest versions of rstudio', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	args = parser.parse_args()
 
-	with open('data.json', 'r+') as f:
+	with open(args.data, 'r+') as f:
 		app = Application(f)
 
 		if 'update' == args.action:
