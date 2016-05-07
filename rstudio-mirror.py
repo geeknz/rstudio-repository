@@ -7,6 +7,7 @@ import os
 import re
 import requests
 import shutil
+import sys
 import tempfile
 import time
 
@@ -54,12 +55,11 @@ class Application(object):
 		}
 		sort_key = lambda f: sort_order[f] if f in sort_order else 14
 
-		with gzip.open('Packages.gz', 'wt') as f:
-			for entry in data:
-				entry['Filename'] = 'pool/main/r/rstudio/{0}'.format(entry['Filename'])
-				for field in sorted(entry.keys(), key = sort_key):
-					f.write('{0}: {1}\n'.format(field, entry[field]))
-				f.write('\n')
+		for entry in data:
+			entry['Filename'] = 'pool/main/r/rstudio/{0}'.format(entry['Filename'])
+			for field in sorted(entry.keys(), key = sort_key):
+				sys.stdout.write('{0}: {1}\n'.format(field, entry[field]))
+			sys.stdout.write('\n')
 
 	def update(self):
 		data = json.load(self.__file)
@@ -214,7 +214,7 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	parser.add_argument('-d', '--data', type=str, default='data.json', help='repository data file')
 	action_subparser = parser.add_subparsers(dest='action')
-	export_parser = action_subparser.add_parser('export', help='exports the repository as Packages.gz', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+	export_parser = action_subparser.add_parser('export', help='exports the repository to stdout', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	export_parser.add_argument('--architecture', type=str, choices=['i386', 'amd64'], nargs='+', default=['i386', 'amd64'])
 	export_parser.add_argument('--debroot', type=str, default='pool/main/r/rstudio/', help='')
 	update_parser = action_subparser.add_parser('update', help='updates the repository with the latest versions of rstudio', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
