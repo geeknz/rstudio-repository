@@ -2,6 +2,7 @@
 from deb_pkg_tools import control
 from deb_pkg_tools import repo
 import errno
+import functools
 import json
 import multiprocessing.pool
 import os
@@ -11,11 +12,10 @@ import requests
 import shutil
 import sys
 import tempfile
-import threading
-import threading
 import time
 
 def inspect(path):
+	sys.stdout.write('Inspecting: {0}\n'.format(path))
 	info = repo.inspect_package_fields(path)
 	info = dict(info)
 	info.update(repo.get_packages_entry(path))
@@ -68,6 +68,7 @@ def download(version, arch, directory = '.'):
 		if not response.ok:
 			return False
 
+		sys.stdout.write('Downloading: {0}\n'.format(url))
 		for block in response.iter_content(1024):
 			file.write(block)
 
@@ -114,6 +115,7 @@ class Application(object):
 		except IOError as e:
 			if errno.EPIPE == e.errno:
 				return
+			raise
 
 	def update(self):
 		data = json.load(self.__file)
@@ -129,14 +131,10 @@ class Application(object):
 
 		versions = [v for v in vrange(current_release, latest_release)]
 		versions = [v for v, p in zip(versions, pool.map(isValid, versions)) if p]
+		versions = zip([v for v in versions for _ in (0, 1)], ['amd64', 'i386'] * 2 * len(versions))
 
-		for version in versions:
-			sys.stdout.write('Adding version: {0}\n'.format(version))
-
-			amd64 = packageInfo(version, 'amd64')
-			i386 = packageInfo(version, 'i386')
-			data.insert(0, amd64)
-			data.insert(0, i386)
+		for info in pool.map(lambda v: packageInfo(*v), versions):
+			data.insert(0, info)
 
 		self.__file.seek(0)
 		json.dump(data, f, indent = 4, sort_keys = True)
