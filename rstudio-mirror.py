@@ -3,6 +3,7 @@ from deb_pkg_tools import control
 from deb_pkg_tools import repo
 import errno
 import json
+import multiprocessing.pool
 import os
 import posixpath
 import re
@@ -10,6 +11,7 @@ import requests
 import shutil
 import sys
 import tempfile
+import threading
 import threading
 import time
 
@@ -123,13 +125,18 @@ class Application(object):
 			sys.stdout.write('Repository is upto date\n')
 			return
 
-		for version in vrange(current_release, latest_release):
-			if isValid(version):
-				sys.stdout.write('Adding version: {0}\n'.format(version));
-				amd64 = packageInfo(version, 'amd64')
-				i386 = packageInfo(version, 'i386')
-				data.insert(0, amd64)
-				data.insert(0, i386)
+		pool = multiprocessing.pool.ThreadPool(4)
+
+		versions = [v for v in vrange(current_release, latest_release)]
+		versions = [v for v, p in zip(versions, pool.map(isValid, versions)) if p]
+
+		for version in versions:
+			sys.stdout.write('Adding version: {0}\n'.format(version))
+
+			amd64 = packageInfo(version, 'amd64')
+			i386 = packageInfo(version, 'i386')
+			data.insert(0, amd64)
+			data.insert(0, i386)
 
 		self.__file.seek(0)
 		json.dump(data, f, indent = 4, sort_keys = True)
