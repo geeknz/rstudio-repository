@@ -44,13 +44,14 @@ def toTuple(version):
 	return tuple(version)
 
 def vrange(v1, v2):
-	major1, minor1, patch1 = toTuple(v1)
-	major2, minor2, patch2 = toTuple(v2)
+	low = toTuple(v1)
+	high = toTuple(v2)
 
-	for major in xrange(major1, major2 + 1):
-		for minor in xrange(minor1, minor2 + 1):
-			for patch in xrange(patch1 + 1, patch2 + 1):
-				yield '{0}.{1}.{2}'.format(major, minor, patch)
+	for major in xrange(0, high[0] + 1):
+		for minor in xrange(0, 99 + 1):
+			for patch in xrange(0, 1500 + 1):
+				if high >= (major, minor, patch) > low:
+					yield '{0}.{1}.{2}'.format(major, minor, patch)
 
 def isValid(version):
 	url = 'https://download1.rstudio.org/rstudio-{0}-i386.deb'.format(version)
