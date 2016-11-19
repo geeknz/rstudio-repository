@@ -142,6 +142,17 @@ class Application(object):
 		self.__file.truncate()
 		sys.stdout.write('Repository is upto date\n')
 
+	def check(self):
+		data = json.load(self.__file)
+
+		current_release = data[0]['Version']
+		latest_release = getLatestVersion()
+
+		if latest_release == current_release:
+			sys.stdout.write('Repository is upto date\n')
+		else:
+			sys.stdout.write('New version available\n')
+
 if __name__ == '__main__':
 	import argparse
 	parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -151,10 +162,14 @@ if __name__ == '__main__':
 	export_parser.add_argument('--architecture', type=str, choices=['i386', 'amd64'], nargs='+', default=['i386', 'amd64'])
 	export_parser.add_argument('--path', type=str, default='pool/main/r/rstudio/')
 	update_parser = action_subparser.add_parser('update', help='updates the repository with the latest versions of rstudio', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+	update_parser = action_subparser.add_parser('check', help='determines if the repository is out of date', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	args = parser.parse_args()
 
 	with open(args.data, 'r+') as f:
 		app = Application(f)
+
+		if 'check' == args.action:
+			app.check()
 
 		if 'update' == args.action:
 			app.update()
